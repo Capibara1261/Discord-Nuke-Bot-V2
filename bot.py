@@ -223,9 +223,29 @@ async def spam_webhooks_loop():
 
             await asyncio.sleep(interval)
 
+async def main():
+    settings = load_settings()
+    auto_leave = settings.get("AUTO_LEAVE", "false").lower() == "true"
+    async with bot:
+        try:
+            await bot.start(TOKEN)
+        except asyncio.CancelledError:
+            if auto_leave:
+                print("[*] Auto-Leave is enabled. Leaving all guilds...")
+                for guild in list(bot.guilds):
+                    try:
+                        await guild.leave()
+                        print(f"[*] Left guild: {guild.name}")
+                    except Exception as e:
+                        print(f"[*] Failed to leave guild {guild.name}: {e}")
+            raise
+
 settings = load_settings()
 TOKEN = settings.get("TOKEN")
 if not TOKEN:
     print("[*] Error No TOKEN found in config.txt")
 else:
-    bot.run(TOKEN)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
